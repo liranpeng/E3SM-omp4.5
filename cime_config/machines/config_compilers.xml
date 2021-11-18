@@ -247,7 +247,7 @@ flags should be captured within MPAS CMake files.
   </FC_AUTO_R8>
   <FFLAGS>
     <base>  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </base>
-    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append compile_threaded="TRUE"> -qno-openmp </append>
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
   </FFLAGS>
@@ -262,7 +262,7 @@ flags should be captured within MPAS CMake files.
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
-    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append compile_threaded="TRUE"> -qno-openmp-offload </append>
   </LDFLAGS>
   <MPICC> mpicc  </MPICC>
   <MPICXX> mpicxx </MPICXX>
@@ -1470,6 +1470,42 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="stampede2" COMPILER="intel">
+  <CFLAGS>
+    <append> -xCORE-AVX2 </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DLINUX </append>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+    <append> -DARCH_MIC_KNL </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
+    <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
+    <append> -xCORE-AVX2 </append>
+  </FFLAGS>
+  <HDF5_PATH>$ENV{TACC_HDF5_DIR}</HDF5_PATH>
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpicxx </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
+  <MPI_LIB_NAME>impi</MPI_LIB_NAME>
+  <NETCDF_PATH MPILIB="impi">$ENV{TACC_NETCDF_DIR}</NETCDF_PATH>
+  <NETCDF_PATH MPILIB="mpi-serial">$ENV{TACC_NETCDF_DIR}</NETCDF_PATH>
+  <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
+  <PNETCDF_PATH MPILIB="impi">$ENV{TACC_PNETCDF_DIR}</PNETCDF_PATH>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <SFC> ifort </SFC>
+  <SLIBS>
+    <append MPILIB="impi"> -L$NETCDF_PATH -lnetcdff -Wl,--as-needed,-L$NETCDF_PATH/lib -lnetcdff -lnetcdf </append>
+    <append MPILIB="mpi-serial"> -L$NETCDF_PATH -lnetcdff -Wl,--as-needed,-L$NETCDF_PATH/lib -lnetcdff -lnetcdf </append>
+    <append> -mkl -lpthread </append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="frontera" COMPILER="intel">
   <CFLAGS>
     <append> -xCORE-AVX2 </append>
   </CFLAGS>
