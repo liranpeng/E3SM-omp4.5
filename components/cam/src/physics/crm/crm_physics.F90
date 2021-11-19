@@ -186,7 +186,8 @@ subroutine crm_physics_register()
    ! ACLDY_CEN has to be global in the physcal buffer to be saved in the restart file
    ! total (all sub-classes) cloudy fractional area in previous time step 
    call pbuf_add_field('ACLDY_CEN','global', dtype_r8, dims_gcm_2D, idx) 
-
+   call pbuf_add_field('SPWW','global', dtype_r8, dims_gcm_2D, idx)
+   call pbuf_add_field('SPBUOYA','global', dtype_r8, dims_gcm_2D, idx)
 #ifdef MAML
    ! special vars for passing CRM-scale precipition/snow into CLM
    call pbuf_add_field('CRM_PCP', 'physpkg', dtype_r8, dims_crm_2D, crm_pcp_idx)
@@ -372,6 +373,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(r8), dimension(pcols) :: qli_hydro_after   ! column-integraetd rain + snow + graupel 
    real(r8), dimension(pcols) ::  qi_hydro_after   ! column-integrated snow water + graupel water
    real(r8) :: sfactor                             ! used to determine precip type for sam1mom
+   real(r8), allocatable  :: spww(:,:)   ! w'w'2 from CRM, mspritch, hparish
+   real(r8), allocatable  :: spbuoya(:,:)  ! buoyancy flux profile, mwyant
 
    integer  :: i, k, m, ii, jj                     ! loop iterators
    integer  :: ixcldliq, ixcldice                  ! constituent indices
@@ -446,7 +449,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    call crm_rad_initialize(crm_rad)
    call crm_input%initialize(pcols,pver)
    call crm_output_initialize(crm_output,pcols,pver)
-
+   allocate( spww(pcols,pver) )
+   allocate( spbuoya(pcols,pver) )
    !------------------------------------------------------------------------------------------------
    ! Set CRM orientation angle
    !------------------------------------------------------------------------------------------------
@@ -545,7 +549,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    snow_str = 0.
    prec_pcw = 0
    snow_pcw = 0.
-   
+   spww(:,:) = 0. ! mspritch, hparish
+   spbuoya(:,:) = 0. ! mwyant
+ 
    ! Initialize stuff:
    call cnst_get_ind('CLDLIQ', ixcldliq)
    call cnst_get_ind('CLDICE', ixcldice)
@@ -561,7 +567,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    call pbuf_get_field (pbuf, pbuf_get_index('CRM_T'), crm_state%temperature)
 
    ! Set pointers to microphysics fields in crm_state
+   call pbuf_get_field(pbuf, pbuf_get_index('SPWW'), crm_state%spww)
    call pbuf_get_field(pbuf, pbuf_get_index('CRM_QT'), crm_state%qt)
+   call pbuf_get_field(pbuf, pbuf_get_index('SPBUOYA'), crm_state%spbuoya)
    if (MMF_microphysics_scheme .eq. 'sam1mom') then
       call pbuf_get_field(pbuf, pbuf_get_index('CRM_QP'), crm_state%qp)
       call pbuf_get_field(pbuf, pbuf_get_index('CRM_QN'), crm_state%qn)
@@ -621,6 +629,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                crm_state%ns(i,:,:,k) = 0.0_r8
                crm_state%qg(i,:,:,k) = 0.0_r8
                crm_state%ng(i,:,:,k) = 0.0_r8
+               crm_state%spww(i,k) = 0.0_r8
+               crm_state%spbuoya(i,k) = 0.0_r8
             end if
 
          end do
@@ -816,7 +826,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       call t_startf ('crm_call')
       call crm( lchnk, ncol, ztodt, pver,       &
                 crm_input, crm_state, crm_rad,  &
-                crm_ecpp_output, crm_output )
+                crm_ecpp_output, crm_output ,spww, spbuoya )
       call t_stopf('crm_call')
 
       !---------------------------------------------------------------------------------------------
@@ -950,8 +960,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       !---------------------------------------------------------------------------------------------
       ! Write out data for history files
       !---------------------------------------------------------------------------------------------
-
-      call crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecpp_output, qrs, qrl)
+      crm_state%spww       = spww
+      crm_state%spbuoya      = spbuoya
+      call crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecpp_output, qrs, qrl, spww, spbuoya)
 
       ! Convert heating rate to Q*dp to conserve energy across timesteps
       do m = 1,crm_nz

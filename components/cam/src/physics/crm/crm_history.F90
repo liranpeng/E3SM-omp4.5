@@ -211,7 +211,8 @@ subroutine crm_history_init(species_class)
    call addfld('SPQRL    ', (/'lev'/), 'A','K/s', 'long-wave heating rate')
    call addfld('SPQRS    ', (/'lev'/), 'A','K/s', 'short-wave heating rate')
    call addfld('LENGC    ', (/'ilev'/),'A','m  ', 'Mixing length scale for the calcuation of vertical difusivity')
- 
+   call addfld('SPBUOYA ', (/'lev'/), 'A','K/s', 'resolved buoyancy flux')
+   call addfld('SPWW    ', (/'lev'/), 'A','m2/s2', 'ww^2') 
    call addfld('SPKVH     ',(/'ilev'/),'A','m2/s    ','Vertical diffusivity used in dropmixnuc in the MMF call')
    call addfld('SPWTKE   ', (/'lev'/), 'A','m/s',     'Standard deviation of updraft velocity')
    call addfld('SPLCLOUD  ',(/'lev'/), 'A','        ','Liquid cloud fraction')
@@ -402,7 +403,7 @@ subroutine crm_history_init(species_class)
 end subroutine crm_history_init
 !---------------------------------------------------------------------------------------------------
 !---------------------------------------------------------------------------------------------------
-subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecpp_output, qrs, qrl)
+subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecpp_output, qrs, qrl, spww, spbuoya)
    use physics_types,          only: physics_state, physics_tend, physics_ptend
    use phys_control,           only: phys_getopts
    use crm_state_module,       only: crm_state_type
@@ -425,7 +426,8 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
 
    real(r8), dimension(:,:), intent(in) :: qrs        ! shortwave radiative heating rate
    real(r8), dimension(:,:), intent(in) :: qrl        ! longwave radiative heating rate
-
+   real(r8), dimension(:,:), intent(in) :: spww       ! w'w'^2, mspritch,hparish
+   real(r8), dimension(:,:), intent(in) :: spbuoya    ! resolved buoyancy flux,mwyant
    !----------------------------------------------------------------------------
    ! local variables
    real(r8) :: cwp      (pcols,pver)   ! in-cloud cloud (total) water path (kg/m2)
@@ -463,7 +465,8 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    call outfld('SPDQ    ',ptend%q(1,1,1),        pcols, lchnk )
    call outfld('SPDQC   ',ptend%q(1,1,ixcldliq), pcols, lchnk )
    call outfld('SPDQI   ',ptend%q(1,1,ixcldice), pcols, lchnk )
-
+   call outfld('SPWW    ',spww                 , pcols, lchnk )
+   call outfld('SPBUOYA ',spbuoya              , pcols, lchnk )
    ! CRM radiative heating rate
    ! NOTE: We output the radiative heating rates (SPQRS and SPQRL) here 
    ! because this is the heating thatis applied to the CRM at this GCM timestep, 
@@ -476,7 +479,6 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    ! GCM level rad heating tendencies
    call outfld('SPQRL   ',qrl/cpair, pcols, lchnk )
    call outfld('SPQRS   ',qrs/cpair, pcols, lchnk )
-
    ! Why do we output this here?
    call outfld('PRES    ',state%pmid, pcols, lchnk )
    call outfld('DPRES   ',state%pdel, pcols, lchnk )
