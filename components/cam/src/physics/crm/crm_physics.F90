@@ -286,6 +286,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    ! 
    !------------------------------------------------------------------------------------------------
    use ppgrid
+   use grid
    use perf_mod
    use physics_buffer,  only: physics_buffer_desc, pbuf_old_tim_idx, pbuf_get_index, &
                               dyn_time_lvls, pbuf_get_field, pbuf_set_field
@@ -347,7 +348,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 
    integer lchnk                                   ! chunk identifier
    integer ncol                                    ! number of atmospheric columns
-   integer nstep                                   ! time steps
    real(r8) crm_run_time                           ! length of CRM integration
 
    ! physics buffer fields to compute tendencies for stratiform package
@@ -373,8 +373,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(r8), dimension(pcols) :: qli_hydro_after   ! column-integraetd rain + snow + graupel 
    real(r8), dimension(pcols) ::  qi_hydro_after   ! column-integrated snow water + graupel water
    real(r8) :: sfactor                             ! used to determine precip type for sam1mom
-   real(r8), allocatable  :: spww(:,:)   ! w'w'2 from CRM, mspritch, hparish
-   real(r8), allocatable  :: spbuoya(:,:)  ! buoyancy flux profile, mwyant
+   real(crm_rknd), dimension(pcols,nzm) :: spww   ! w'w'2 from CRM, mspritch, hparish
+   real(crm_rknd), dimension(pcols,nzm) :: spbuoya  ! buoyancy flux profile, mwyant
 
    integer  :: i, k, m, ii, jj                     ! loop iterators
    integer  :: ixcldliq, ixcldice                  ! constituent indices
@@ -449,8 +449,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    call crm_rad_initialize(crm_rad)
    call crm_input%initialize(pcols,pver)
    call crm_output_initialize(crm_output,pcols,pver)
-   allocate( spww(pcols,pver) )
-   allocate( spbuoya(pcols,pver) )
    !------------------------------------------------------------------------------------------------
    ! Set CRM orientation angle
    !------------------------------------------------------------------------------------------------
@@ -549,8 +547,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    snow_str = 0.
    prec_pcw = 0
    snow_pcw = 0.
-   spww(:,:) = 0. ! mspritch, hparish
-   spbuoya(:,:) = 0. ! mwyant
  
    ! Initialize stuff:
    call cnst_get_ind('CLDLIQ', ixcldliq)
@@ -567,9 +563,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    call pbuf_get_field (pbuf, pbuf_get_index('CRM_T'), crm_state%temperature)
 
    ! Set pointers to microphysics fields in crm_state
-   call pbuf_get_field(pbuf, pbuf_get_index('SPWW'), crm_state%spww)
    call pbuf_get_field(pbuf, pbuf_get_index('CRM_QT'), crm_state%qt)
-   call pbuf_get_field(pbuf, pbuf_get_index('SPBUOYA'), crm_state%spbuoya)
    if (MMF_microphysics_scheme .eq. 'sam1mom') then
       call pbuf_get_field(pbuf, pbuf_get_index('CRM_QP'), crm_state%qp)
       call pbuf_get_field(pbuf, pbuf_get_index('CRM_QN'), crm_state%qn)
@@ -629,8 +623,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                crm_state%ns(i,:,:,k) = 0.0_r8
                crm_state%qg(i,:,:,k) = 0.0_r8
                crm_state%ng(i,:,:,k) = 0.0_r8
-               crm_state%spww(i,k) = 0.0_r8
-               crm_state%spbuoya(i,k) = 0.0_r8
             end if
 
          end do
@@ -957,12 +949,18 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 
 #endif /* MMF_USE_ESMT */
 
+      do m = 1,nzm
+         k = pver-m+1
+         do i = 1,ncol
+            crm_output%spww(i,k) = spww(i,m)
+            crm_output%spbuoya(i,k) = spbuoya(i,m)
+         end do
+      end do
+
       !---------------------------------------------------------------------------------------------
       ! Write out data for history files
       !---------------------------------------------------------------------------------------------
-      crm_state%spww       = spww
-      crm_state%spbuoya      = spbuoya
-      call crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecpp_output, qrs, qrl, spww, spbuoya)
+      call crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecpp_output, qrs, qrl)
 
       ! Convert heating rate to Q*dp to conserve energy across timesteps
       do m = 1,crm_nz

@@ -157,11 +157,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(crm_rknd), pointer :: crm_state_qt         (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_qp         (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_qn         (:,:,:,:)
-    real(r8), dimension(ncrms,nzm)  :: wbaraux
-    real(r8), dimension(ncrms,nzm)  :: crm_ww_inst
-    real(r8), dimension(ncrms,nzm)  :: tkebuoy
-    real(r8), dimension(ncrms,nzm), intent(out) :: crm_ww       ! w'w'^2, mspritch,hparish
-    real(r8), dimension(ncrms,nzm), intent(out) :: crm_buoya    ! resolved buoyancy flux,mwyant
+    real(crm_rknd), dimension(ncrms,nzm)  :: wbaraux
+    real(crm_rknd), dimension(ncrms,nzm)  :: crm_ww_inst
+    real(crm_rknd), dimension(ncrms,nzm)  :: tkebuoy
+    real(crm_rknd), dimension(ncrms,nzm), intent(out) :: crm_ww       ! w'w'^2, mspritch,hparish
+    real(crm_rknd), dimension(ncrms,nzm), intent(out) :: crm_buoya    ! resolved buoyancy flux,mwyant
   !-----------------------------------------------------------------------------------------------
   !-----------------------------------------------------------------------------------------------
 
@@ -862,32 +862,30 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
     do icrm = 1 , ncrms
       do k=1,nzm
-        l = plev-k+1
         do j=1,ny
           do i=1,nx
             ! ---- hparish, mspritch, new CRM w'w'2 dianostic:
-            wbaraux(icrm,l) = wbaraux(icrm,l) + w(icrm,i,j,k)
+            wbaraux(icrm,k) = wbaraux(icrm,k) + w(icrm,i,j,k)
             !write(iulog,*) 'Liran check2
             !ww=>',ncrms,icrm,l,w(icrm,i,j,k),wbaraux(icrm,l)
           enddo  
         enddo 
-        wbaraux(icrm,l) = wbaraux(icrm,l)*factor_xy 
+        wbaraux(icrm,k) = wbaraux(icrm,k)*factor_xy 
       enddo
     enddo
 
     do icrm = 1 , ncrms
       do k=1,nzm
-        l = plev-k+1
-        crm_ww_inst(icrm,l) = 0.D0
+        crm_ww_inst(icrm,k) = 0.D0
         crm_buoya(icrm,k) = crm_buoya(icrm,k) + tkebuoy(icrm,k)
         do j=1,ny
           do i=1,nx
             ! ---- hparish, mspritch, new CRM w'w'2 dianostic:
-            crm_ww_inst(icrm,l) = crm_ww_inst(icrm,l) + (w(icrm,i,j,k) - wbaraux(icrm,l))**2
+            crm_ww_inst(icrm,k) = crm_ww_inst(icrm,k) + (w(icrm,i,j,k) - wbaraux(icrm,k))**2
           enddo
         enddo
-        crm_ww_inst(icrm,l) = crm_ww_inst(icrm,l)*factor_xy ! Mean w at each
-        crm_ww(icrm,l) = crm_ww(icrm,l) + crm_ww_inst(icrm,l)
+        crm_ww_inst(icrm,k) = crm_ww_inst(icrm,k)*factor_xy ! Mean w at each
+        crm_ww(icrm,k) = crm_ww(icrm,k) + crm_ww_inst(icrm,k)
       enddo
     enddo
 

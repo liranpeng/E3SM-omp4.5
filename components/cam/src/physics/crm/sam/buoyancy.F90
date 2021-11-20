@@ -7,16 +7,17 @@ contains
   subroutine buoyancy(ncrms,tkelebuoy)
     use vars
     use params
+    use cam_logfile,     only: iulog
     implicit none
     integer, intent(in) :: ncrms
     integer i,j,k,kb,icrm
     real(crm_rknd) betu, betd,coef
-    real T_rho_0(ncrms,nzm), T_rho(ncrms,nzm)
-    real(crm_rknd), dimension(ncrms,nzm), intent(inout) ::  tkelebuoy
+    real(crm_rknd), dimension(ncrms,nzm) :: T_rho_0, T_rho
+    real(crm_rknd), dimension(ncrms,nzm), intent(out) ::  tkelebuoy
 
     coef = 1./float(nx*ny)
 
-    do k=1,nz
+    do k=1,nzm
       do icrm=1,ncrms
        tkelebuoy(icrm,k)=0.
        T_rho_0(icrm,k)=0.
@@ -44,7 +45,7 @@ contains
       end do ! k
     end do ! k
 
-    do k=2,nzm
+    do k=1,nzm
       do j=1,ny
         do i=1,nx
           do icrm=1,ncrms
@@ -54,12 +55,17 @@ contains
       end do ! k
     end do ! k
 
-
-    do k=2,nzm
+   do k=1,nzm
+      do icrm=1,ncrms
+       tkelebuoy(icrm,k)=0.
+       T_rho_0(icrm,k)=T_rho_0(icrm,k) * coef
+      end do
+    end do
+    
+    do k=1,nzm
       do j=1,ny
         do i=1,nx
           do icrm=1,ncrms
-            T_rho_0(icrm,k) =  T_rho_0(icrm,k) * coef
             T_rho(icrm,k) = tabs(icrm,i,j,k)*(1.+epsv*qv(icrm,i,j,k)-(qcl(icrm,i,j,k)+qci(icrm,i,j,k)+qpl(icrm,i,j,k)+qpi(icrm,i,j,k)))
             tkelebuoy(icrm,k) = tkelebuoy(icrm,k) + (T_rho(icrm,k)-T_rho_0(icrm,k))*dwdt(icrm,i,j,k,na)
           end do ! i
@@ -67,7 +73,7 @@ contains
       end do ! k
     end do ! k
 
-    do k=1,nz
+    do k=1,nzm
       do icrm=1,ncrms
        tkelebuoy(icrm,k)= 9.81*tkelebuoy(icrm,k)*coef/T_rho_0(icrm,k)
       end do

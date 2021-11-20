@@ -46,20 +46,20 @@ set ThreadCount_atm = 1
 set nthreads        = 1
 set OMP_NUM_THREADS = 1
 ### GRID OPTIONS <Liran>
-set crm_nx         = 32         # <<< change this one!
-set crm_ny         = 1
-set crm_dx         = 2000
-set crm_dt         = 5
-set crm_nz         = 120
-set crm_nx_rad     = 16
-set crm_ny_rad     = 1
-#set crm_nx         = 64         # <<< change this one!
+#set crm_nx         = 32         # <<< change this one!
 #set crm_ny         = 1
-#set crm_dx         = 200
-#set crm_dt         = 0.5
+#set crm_dx         = 2000
+#set crm_dt         = 1
 #set crm_nz         = 120
 #set crm_nx_rad     = 16
 #set crm_ny_rad     = 1
+set crm_nx         = 64         # <<< change this one!
+set crm_ny         = 1
+set crm_dx         = 200
+set crm_dt         = 0.5
+set crm_nz         = 120
+set crm_nx_rad     = 16
+set crm_ny_rad     = 1
 
 set nlev           = 125
 @ work0 = 6144 - 2048
@@ -70,7 +70,7 @@ set fetch_code     = false        # flag to toggle cloning source code
 set e3sm_tag       = remotes/E3SM/xyuan/openmp4.5   # github tag or hash
 set branch_name    = xyuan/openmp4.5
 set tag_name       = E3SM-omp4.5    # code sub-directory name
-set job_name       = SPCTRL_ERA5_2008_rrtmgp_${machine}_${resolution}_CRM1_${crm_nx}x_${crm_nz}z${crm_dx}m.${crm_dt}s_crm_nx_rad_${crm_nx_rad}_np_${np}_nlev_${nlev}
+set job_name       = UPCTRL_ERA5_2008_rrtmgp_${machine}_${resolution}_CRM1_${crm_nx}x_${crm_nz}z${crm_dx}m.${crm_dt}s_crm_nx_rad_${crm_nx_rad}_np_${np}_nlev_${nlev}
 
 ### CASE_NAME
 set case_name = ${job_name}.${machine}
@@ -892,7 +892,7 @@ endif
 #===========================
 # SET THE PARTITION OF NODES
 #===========================
-$xmlchange_exe --id JOB_QUEUE --val 'normal'
+$xmlchange_exe --id JOB_QUEUE --val 'development'
 if ( `lowercase $debug_queue` == true ) then
   if ( $machine == cab || $machine == sierra ) then
     $xmlchange_exe --id JOB_QUEUE --val 'pdebug'

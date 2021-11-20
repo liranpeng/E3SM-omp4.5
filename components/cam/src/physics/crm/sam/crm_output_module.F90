@@ -35,8 +35,9 @@ module crm_output_module
       real(crm_rknd), allocatable :: clhgh(:)  ! shaded cloud fraction
       real(crm_rknd), allocatable :: clmed(:)  ! shaded cloud fraction
       real(crm_rknd), allocatable :: cllow(:)  ! shaded cloud fraction
-
-      real(crm_rknd), allocatable :: cldtop(:,:)  ! cloud top ... pressure???
+      real(crm_rknd), allocatable :: spww(:,:)
+      real(crm_rknd), allocatable :: cldtop(:,:)
+      real(crm_rknd), allocatable :: spbuoya(:,:)  ! cloud top ... pressure???
       real(crm_rknd), allocatable :: precc(:)   ! convective precipitation rate
       real(crm_rknd), allocatable :: precl(:)   ! stratiform precipitation rate
       real(crm_rknd), allocatable :: precsc(:)   ! convective snow precipitation rate
@@ -183,7 +184,8 @@ contains
 
          ! NOTE: this output had a bug in the previous implementation
          if (.not. allocated(output%cldtop)) allocate(output%cldtop(ncol,nlev))
-
+         if (.not. allocated(output%spww)) allocate(output%spww(ncol,nlev))
+         if (.not. allocated(output%spbuoya)) allocate(output%spbuoya(ncol,nlev))
          if (.not. allocated(output%qc_mean)) allocate(output%qc_mean(ncol,nlev))
          if (.not. allocated(output%qi_mean)) allocate(output%qi_mean(ncol,nlev))
          if (.not. allocated(output%qs_mean)) allocate(output%qs_mean(ncol,nlev))
@@ -215,6 +217,8 @@ contains
          call prefetch(output%precsc)
          call prefetch(output%precsl)
          call prefetch(output%cldtop)
+         call prefetch(output%spww)
+         call prefetch(output%spbuoya)
          call prefetch(output%qc_mean)
          call prefetch(output%qi_mean)
          call prefetch(output%qs_mean)
@@ -371,6 +375,8 @@ contains
       output%clhgh = 0
 
       output%cldtop = 0
+      output%spww = 0
+      output%spbuoya = 0
       output%precc = 0
       output%precl = 0
       output%precsc = 0
@@ -487,6 +493,8 @@ contains
       if (allocated(output%clmed)) deallocate(output%clmed)
       if (allocated(output%clhgh)) deallocate(output%clhgh)
       if (allocated(output%cldtop)) deallocate(output%cldtop)
+      if (allocated(output%spww)) deallocate(output%spww)
+      if (allocated(output%spbuoya)) deallocate(output%spbuoya)
       if (allocated(output%precc)) deallocate(output%precc)
       if (allocated(output%precl)) deallocate(output%precl)
       if (allocated(output%precsc)) deallocate(output%precsc)
