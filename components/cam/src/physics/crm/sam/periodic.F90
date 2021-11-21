@@ -10,7 +10,7 @@ contains
     use vars
     use microphysics
     use sgs
-    use params, only: dotracers, dosgs
+    use params, only: dotracers, dosgs, doMomentumHyperviscosity !bloss
     use crmtracers
     use scalar_momentum_mod
 
@@ -26,7 +26,11 @@ contains
       call bound_exchange(ncrms,v,dimx1_v,dimx2_v,dimy1_v,dimy2_v,nzm,1,1,1,1,2)
       ! use w at the top level  - 0s anyway - to exchange the sst boundaries (for
       ! surface fluxes call
+#if defined(_OPENACC)
       !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do j = 1 , ny
         do i = 1 , nx
           do icrm = 1 , ncrms
@@ -35,7 +39,11 @@ contains
         enddo
       enddo
       call bound_exchange(ncrms,w,dimx1_w,dimx2_w,dimy1_w,dimy2_w,nz,1,1,1,1,3)
+#if defined(_OPENACC)
       !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do j = 1-YES3D , ny+YES3D
         do i = 0 , nx+1
           do icrm = 1 , ncrms
@@ -43,7 +51,11 @@ contains
           enddo
         enddo
       enddo
+#if defined(_OPENACC)
       !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do j = 1-YES3D , ny+YES3D
         do i = 0 , nx+1
           do icrm = 1 , ncrms
@@ -86,6 +98,13 @@ contains
     ! Update all scalars before SGS
     !-------------------------------------------------
     if(flag.eq.3) then
+      if(doMomentumHyperviscosity) then
+        !bloss: We need extra ghost cells for hyperdiffusion.  Get them.
+        call bound_exchange(ncrms,u,dimx1_u,dimx2_u,dimy1_u,dimy2_u,nzm,2,3,2,2,1)
+        call bound_exchange(ncrms,v,dimx1_v,dimx2_v,dimy1_v,dimy2_v,nzm,2,2,2,3,2)
+        call bound_exchange(ncrms,w,dimx1_w,dimx2_w,dimy1_w,dimy2_w,nzm+1,2,2,2,2,3)
+      end if
+
       call bound_exchange(ncrms,t,dimx1_s,dimx2_s,dimy1_s,dimy2_s,nzm,1,1,1,1,4)
       do i = 1,nsgs_fields
         if(dosgs.and.advect_sgs) &
