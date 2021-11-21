@@ -73,6 +73,13 @@ module params
   real(crm_rknd), allocatable :: taux0(:)    ! surface stress in x, m2/s2
   real(crm_rknd), allocatable :: tauy0(:)    ! surface stress in y, m2/s2
 
+  !bloss: Enable hyperdiffusion in SGS_TKE to limit grid-scale "noise" in 
+  !   velocity field near sharp inversions.  This was found to produce larger
+  !   stratocumulus liquid water paths in Wyant et al (2018, JAMES), though
+  !   further study may be needed to understand its effects on shallow and deep
+  !   convection.  The timescale should be at least four times the crm timestep.
+  logical:: doMomentumHyperviscosity = .true. ! Switch on hyperviscosity if true
+  real:: tau_MomentumHyperviscosity = 30. ! damping time scale for hyperviscosity (seconds)
 
 contains
 
