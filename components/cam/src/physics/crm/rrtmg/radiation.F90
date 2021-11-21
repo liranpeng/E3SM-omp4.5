@@ -28,7 +28,8 @@ use shr_kind_mod,    only: r8=>shr_kind_r8
 use spmd_utils,      only: masterproc, iam, npes
 use ppgrid,          only: pcols, pver, pverp, begchunk, endchunk
 use physics_types,   only: physics_state, physics_ptend
-use physconst,       only: cpair, cappa
+use physconst,       only: cpair, cappa, rair, rhoh2o !bloss: Add rair, rhoh2o for effective radius computation
+use micro_params,    only: sigmag, Nc0, Nc0_oceanice, Nc0_land, doclouddropsedimentation !bloss
 use time_manager,    only: get_nstep, is_first_restart_step
 use cam_abortutils,  only: endrun
 use error_messages,  only: handle_err
@@ -755,14 +756,14 @@ end function radiation_nextsw_cday
 
     ! Add cloud-scale radiative quantities
     if (use_MMF) then
-       call addfld ('CRM_QRAD', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'A', 'K/s', 'Radiative heating tendency')
-       call addfld ('CRM_QRS ', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', 'CRM Shortwave radiative heating rate')
-       call addfld ('CRM_QRSC', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', 'CRM Clearsky shortwave radiative heating rate')
-       call addfld ('CRM_QRL ', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', 'CRM Longwave radiative heating rate' )
-       call addfld ('CRM_QRLC', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', 'CRM Longwave radiative heating rate' )
+       call addfld ('CRM_QRAD   ', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'A', 'K/s', 'Radiative heating tendency')
+       call addfld ('CRM_QRS    ', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', 'CRM Shortwave radiative heating rate')
+       call addfld ('CRM_QRSC   ', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', 'CRM Clearsky shortwave radiative heating rate')
+       call addfld ('CRM_QRL    ', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', 'CRM Longwave radiative heating rate' )
+       call addfld ('CRM_QRLC   ', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', 'CRM Longwave radiative heating rate' )
        call addfld ('CRM_CLD_RAD', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'fraction', 'CRM cloud fraction' )
-       call addfld ('CRM_TAU  ', (/'crm_nx_rad','crm_ny_rad','crm_nz'/), 'A', '1', 'CRM cloud optical depth'  )
-       call addfld ('CRM_EMS  ', (/'crm_nx_rad','crm_ny_rad','crm_nz'/), 'A', '1', 'CRM cloud longwave emissivity'  )
+       call addfld ('CRM_TAU    ', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'A', '1', 'CRM cloud optical depth'  )
+       call addfld ('CRM_EMS    ', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'A', '1', 'CRM cloud longwave emissivity'  )
     end if
 
     call addfld('EMIS', (/ 'lev' /), 'A', '1', 'Cloud longwave emissivity')
@@ -1275,6 +1276,11 @@ end function radiation_nextsw_cday
 
     character(*), parameter :: name = 'radiation_tend'
     character(len=16)       :: MMF_microphysics_scheme  ! MMF_microphysics scheme
+
+    !bloss: For the effective radius computation when SAM1MOM
+    !  is run with cloud droplet sedimentation
+    real :: tv_rad, rho_rad, lwc_rad
+    real, parameter :: pi =  3.14159265359
 !----------------------------------------------------------------------
   
     call phys_getopts( use_MMF_out           = use_MMF )
@@ -1674,6 +1680,38 @@ end function radiation_nextsw_cday
                 ! dei(:ncol,k) = rei(:ncol,k) * 500._r8/917._r8 * 2._r8
                 dei_crm(:ncol,ii,jj,m) = dei(:ncol,k)
               end do ! m
+   
+              if (doclouddropsedimentation) then
+                !bloss(2021-11): When cloud droplet sedimentation is enabled in
+                !SAM1MOM,
+                !  account for the assumed droplet concentration and geometric
+                !  standard 
+                !  deviation (sigmag) in the computation of cloud droplet
+                !  effective radius.
+                
+                do m=1,crm_nz ! CRM index -- bottom to top
+                  k = pver-m+1 ! GCM index -- top to bottom
+
+                  do i = 1,ncol
+                    ! Switch from maritime/ice ocean droplet concentration
+                    ! (~70/cm3) to land (~200/cm3) based on landfrac
+                    Nc0 = Nc0_oceanice + (Nc0_land - Nc0_oceanice)*landfrac(i)
+
+                    ! compute approximate density
+                    tv_rad = t_rad(i,ii,jj,m) * ( 1. + 0.61*qv_rad(i,ii,jj,m) )! virtual temperature in K
+                    rho_rad = state%pmid(i,k) / ( rair * tv_rad ) ! density in kg/m3
+                    lwc_rad = rho_rad * qc_rad(i,ii,jj,m) ! liquid water content in kg/m3
+                    rel_crm(i,ii,jj,m) = 1.e6 & ! convert to micron from meters
+                         * ( 3.*lwc_rad / (4.*pi*1.e6*Nc0*rhoh2o) )**(1./3.)& ! 1e6 converts Nc0 to #/m3
+                         * exp( log( sigmag(lwc_rad) )**2 ) 
+!bloss: Code from SAM, based on Andy Ackerman derivation.
+!bloss           reffc(:,:,k) = 1.e6*( 3.*rho(k)*qcl(:,:,k) /
+!(4.*pi*1.e6*Nc0*rho_water) )**(1./3.) &
+!bloss                * exp( log( sigmag(rho(k)*qcl(:,:,k)) )**2 )
+                  end do
+                end do  
+              end if
+           
             end if ! sam1mom
 
           endif ! use_MMF

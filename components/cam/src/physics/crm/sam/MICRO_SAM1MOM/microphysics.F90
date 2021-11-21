@@ -53,6 +53,10 @@ module microphysics
   real(crm_rknd), allocatable :: mkwsb  (:,:,:)  ! SGS vertical flux
   real(crm_rknd), allocatable :: mkadv  (:,:,:)  ! tendency due to vertical advection
   real(crm_rknd), allocatable :: mkdiff (:,:,:)  ! tendency due to vertical diffusion
+  real(crm_rknd), allocatable :: qtot_sed(:,:,:,:)
+  real(crm_rknd), allocatable :: qice_sed(:,:,:,:)
+  real(crm_rknd), allocatable :: prec_accum(:,:,:)
+  real(crm_rknd), allocatable :: prec_ice_accum(:,:,:)
   character*3   , allocatable :: mkname       (:)
   character*80  , allocatable :: mklongname   (:)
   character*10  , allocatable :: mkunits      (:)
@@ -60,7 +64,7 @@ module microphysics
   real(crm_rknd), allocatable :: qn(:,:,:,:)  ! cloud condensate (liquid + ice)
   real(crm_rknd), allocatable :: qpsrc(:,:)  ! source of precipitation microphysical processes
   real(crm_rknd), allocatable :: qpevp(:,:)  ! sink of precipitating water due to evaporation
-
+  logical :: do_chunked_energy_budgets
 
 CONTAINS
 
@@ -78,6 +82,10 @@ CONTAINS
     allocate( mkwsb(ncrms,nz,1:nmicro_fields)  )
     allocate( mkadv(ncrms,nz,1:nmicro_fields)  )
     allocate( mkdiff(ncrms,nz,1:nmicro_fields)  )
+    allocate( prec_accum(ncrms,nx,ny))
+    allocate( prec_ice_accum(ncrms,nx,ny))
+    allocate( qtot_sed(ncrms,nx,ny,nzm))
+    allocate( qice_sed(ncrms,nx,ny,nzm))
     allocate( mkname       (nmicro_fields))
     allocate( mklongname   (nmicro_fields))
     allocate( mkunits      (nmicro_fields))
@@ -100,6 +108,7 @@ CONTAINS
     call prefetch(qpevp  )
     call prefetch(flag_precip    )
 
+    do_chunked_energy_budgets = .true.
     zero = 0
 
     micro_field = zero
@@ -136,6 +145,10 @@ CONTAINS
     deallocate(qn  )
     deallocate(qpsrc  )
     deallocate(qpevp  )
+    deallocate(qtot_sed)
+    deallocate(qice_sed)
+    deallocate(prec_accum)
+    deallocate(prec_ice_accum)
     deallocate(flag_precip    )
   end subroutine deallocate_micro
 
@@ -402,7 +415,7 @@ CONTAINS
     real(crm_rknd) :: y,pp,pn
     real(crm_rknd) :: lat_heat, wmax
     integer nprec, iprec
-    real(crm_rknd) :: flagstat, tmp
+    real(crm_rknd) :: flagstat, tmp, delta_fz
 
     !Statement functions
     pp(y)= max(real(0.,crm_rknd),y)
@@ -595,8 +608,9 @@ CONTAINS
               do icrm = 1 , ncrms
                 kb=max(1,k-1)
                 ! Add limited flux correction to fz(k).
-                fz(icrm,i,j,k) = fz(icrm,i,j,k) + pp(www(icrm,i,j,k))*min(real(1.,crm_rknd),mx(icrm,i,j,k), mn(icrm,i,j,kb)) - &
-                                                  pn(www(icrm,i,j,k))*min(real(1.,crm_rknd),mx(icrm,i,j,kb),mn(icrm,i,j,k)) ! Anti-diffusive flux
+                delta_fz = pp(www(icrm,i,j,k))*min(real(1.,crm_rknd),mx(icrm,i,j,k), mn(icrm,i,j,kb)) - &
+                           pn(www(icrm,i,j,k))*min(real(1.,crm_rknd),mx(icrm,i,j,kb),mn(icrm,i,j,k)) ! Anti-diffusive flux 
+                fz(icrm,i,j,k) = fz(icrm,i,j,k) + delta_fz
               enddo
             enddo
           enddo
@@ -626,9 +640,12 @@ CONTAINS
               !$acc atomic update
               precflux(icrm,k) = precflux(icrm,k) - tmp   ! For statistics
               if (k == 1) then
-                precsfc(icrm,i,j) = precsfc(icrm,i,j) - fz(icrm,i,j,1)*flagstat ! For statistics
-                precssfc(icrm,i,j) = precssfc(icrm,i,j) - fz(icrm,i,j,1)*(1.-omega(icrm,i,j,1))*flagstat ! For statistics
-                prec_xy(icrm,i,j) = prec_xy(icrm,i,j) - fz(icrm,i,j,1)*flagstat ! For 2D output
+                tmp = fz(icrm,i,j,1)*flagstat ! For statistics
+                precsfc(icrm,i,j) = precsfc(icrm,i,j) - tmp
+                tmp = fz(icrm,i,j,1)*(1.-omega(icrm,i,j,1))*flagstat ! For statistics
+                precssfc(icrm,i,j) = precssfc(icrm,i,j) - tmp
+                tmp = fz(icrm,i,j,1)*flagstat ! For 2D output
+                prec_xy(icrm,i,j) = prec_xy(icrm,i,j) - tmp 
               endif
             enddo
           enddo

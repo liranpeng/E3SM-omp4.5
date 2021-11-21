@@ -4,6 +4,13 @@ module micro_params
   use params, only: crm_rknd
 
   implicit none
+  !bloss: Use these parameters to compute cloud droplet sedimentation.
+  real :: Nc0 = 100. ! cloud droplet number concentration in #/cm3
+  real :: Nc0_oceanice = 70. ! cloud droplet number concentration in #/cm3 <Ocean>
+  real :: Nc0_land = 200. ! cloud droplet number concentration in #/cm3 <Land>
+  logical :: doclouddropsedimentation = .true. ! turn on cloud droplet sedimenation (default = true)
+
+  logical :: douse_reffc = .false. ! compute cloud droplet effective radii from drop size distribution when using full radiation
 
   !  Microphysics stuff:
 
@@ -86,8 +93,24 @@ module micro_params
 
   real(crm_rknd) a_bg, a_pr, a_gr
 
+!bloss: These parameters are used in MICRO_M2005 cloud optics routines.
+real, parameter :: rho_snow = rhos, rho_water = rhor, rho_cloud_ice = 917.
 
 contains
+
+  elemental real function sigmag(lwc_kg_m3)
+    real, intent(in) :: lwc_kg_m3 ! liquid water content in kg/m3
+    real :: lwc_g_m3
+    lwc_g_m3 = 1.e3*lwc_kg_m3 ! convert lwc to g/m3 used in Geoffroy et al formula.
+    ! From Geoffroy et al (2010, ACP, https://doi.org/10.5194/acp-10-4835-2010)
+    !   sigmag is expressed as a function of LWC (in g/m3) based on observations
+    !   from 
+    !   RICO and ACE2
+    sigmag = 1.24 - 0.056*log( max(0.025, min(2., lwc_g_m3) ) )
+    !NOTE: We restrict the permissible values of LWC to the range included
+    !   in the observations used in the the Geoffroy et al (2010) analysis,
+    !   i.e., 0.025 < LWC < 2 g/m3.
+  end function sigmag
 
 
   subroutine allocate_micro_params(ncrms)
