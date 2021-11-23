@@ -6,7 +6,9 @@ contains
   subroutine ice_fall(ncrms)
     ! Sedimentation of ice:
     use vars
-    use microphysics, only: micro_field, index_cloud_ice
+    use microphysics, only: micro_field, index_cloud_ice, &
+     qtot_sed, qice_sed, prec_accum, prec_ice_accum, &
+     do_chunked_energy_budgets,doclouddropsedimentation
     !use micro_params
     use params
     use openacc_utils
@@ -26,6 +28,24 @@ contains
     call prefetch( kmin )
     call prefetch( fz )
 
+    if(do_chunked_energy_budgets) then
+	   !bloss: Initialize sedimentation terms for energy budgets here since this is
+	   !called before micro_precip_fall()
+	   if((nstep-1).eq.0.and.icycle.eq.1) then
+	     !bloss: initialize variables that will accumulate surface precipitation as
+	     !a function of x,y
+	     prec_accum(:,:,:) = 0.
+	     prec_ice_accum(:,:,:) = 0.
+
+	     ! initialize variables that will accumulate 3D tendency due to
+	     ! sedimentation
+	     qtot_sed(:,:,:,:) = 0.
+	     qice_sed(:,:,:,:) = 0.
+	   end if ! if(mod(nstep-1,nsaveMSE).eq.0.and.icycle.eq.1) 
+	 end if ! if(do_chunked_energy_budgets)
+
+
+    if(doclouddropsedimentation) call cloud_droplet_fall(ncrms)
     !$acc parallel loop async(asyncid)
     do icrm = 1 , ncrms
       kmax(icrm)=0
@@ -138,7 +158,7 @@ contains
             ! Include this effect in the total moisture budget.
             !$acc atomic update
             qifall(icrm,k) = qifall(icrm,k) + dqi
-
+            precflux(icrm,k) = precflux(icrm,k) - fz(icrm,i,j,k)*dtn/dz(icrm) 
             ! The latent heat flux induced by the falling cloud ice enters
             ! the liquid-ice static energy budget in the same way as the
             ! precipitation.  Note: use latent heat of sublimation.
@@ -153,6 +173,32 @@ contains
         end do
       end do
     end do
+
+	if(do_chunked_energy_budgets) then
+	  !bloss: save sedimentation tendencies for energy budgets in mse.f90
+	 
+	  do k=max(1,kmin(icrm)-2),kmax(icrm)
+	    coef=dtn/(dz(icrm)*adz(icrm,k)*rho(icrm,k))
+	    do j=1,ny
+	      do i=1,nx
+	        ! The cloud ice increment is the difference of the fluxes.
+	         dqi=coef*(fz(icrm,i,j,k)-fz(icrm,i,j,k+1))
+	         qtot_sed(icrm,i,j,k) = qtot_sed(icrm,i,j,k) + dqi
+	         qice_sed(icrm,i,j,k) = qice_sed(icrm,i,j,k) + dqi
+	       end do
+	     end do
+	   end do
+	!bloss(TODO): Include cloud ice sedimentation contribution to surface
+	!precipitation in 
+	!    MSE Budget outputs.  This cloud be important in cold or mountainous regions
+	!    where 
+	!    ice cloud could form near the surface.
+	!!$   prec_accum(1:nx,1:ny) &
+	!!$        - dtn*fz(1:nx,1:ny,1)
+	!!$   prec_ice_accum(1:nx,1:ny) = prec_ice_accum(1:nx,1:ny) &
+	!!$        - dtn*fz(1:nx,1:ny,1)
+
+	endif
 
     !$acc parallel loop collapse(3) async(asyncid)
     do j=1,ny
