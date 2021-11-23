@@ -3,7 +3,7 @@ module ice_fall_mod
 
 contains
 
-  subroutine ice_fall(ncrms)
+  subroutine ice_fall(ncrms,qc_fall)
     ! Sedimentation of ice:
     use vars
     use microphysics, only: micro_field, index_cloud_ice, &
@@ -17,6 +17,7 @@ contains
     integer, allocatable :: kmax(:)
     integer, allocatable :: kmin(:)
     real(crm_rknd), allocatable :: fz(:,:,:,:)
+    real(crm_rknd), dimension(ncrms,nzm)  :: qc_fall
     integer :: i,j,k, kb, kc, ici,icrm
     real(crm_rknd) coef,dqi,lat_heat,vt_ice
     real(crm_rknd) omnu, omnc, omnd, qiu, qic, qid, tmp_theta, tmp_phi
@@ -185,8 +186,10 @@ contains
 	         dqi=coef*(fz(icrm,i,j,k)-fz(icrm,i,j,k+1))
 	         qtot_sed(icrm,i,j,k) = qtot_sed(icrm,i,j,k) + dqi
 	         qice_sed(icrm,i,j,k) = qice_sed(icrm,i,j,k) + dqi
+	         qc_fall(icrm,k)      = qc_fall(icrm,k) + qtot_sed(icrm,i,j,k)
 	       end do
 	     end do
+         qc_fall(icrm,k)      = qc_fall(icrm,k)/(nx*ny)
 	   end do
 	!bloss(TODO): Include cloud ice sedimentation contribution to surface
 	!precipitation in 
