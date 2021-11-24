@@ -623,7 +623,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
         crm_output%qt_ls     (icrm,k) = 0.
         crm_output%t_ls      (icrm,k) = 0.
         dd_crm               (icrm,k) = 0.
-        crm_output%qc_fall   (icrm,k) = 0.
       endif
       mui_crm(icrm,k) = 0.
       mdi_crm(icrm,k) = 0.
@@ -1155,7 +1154,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
   crm_ww            = crm_ww / real(nstop,crm_rknd)  ! mspritch,hparish
   crm_buoya         = crm_buoya / real(nstop,crm_rknd)  ! mspritch,hparish
-  crm_output%qc_fall(icrm,k) = crm_output%qc_fall(icrm,k)/ real(nstop,crm_rknd)  ! mspritch,hparish
   !$acc parallel loop collapse(4) async(asyncid)
   do k = 1,nzm
     do i=1,nx
