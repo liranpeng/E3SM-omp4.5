@@ -47,10 +47,10 @@ minkmin = 9999
 maxkmax = -9999
 do icrm = 1 , ncrms
   if(kmin(icrm).lt.minkmin) then
-    minkmin = kmin
+    minkmin = kmin(icrm)
   end if  
   if(kmax(icrm).gt.maxkmax) then
-    maxkmax = kmax
+    maxkmax = kmax(icrm)
   end if 
 end do
 
