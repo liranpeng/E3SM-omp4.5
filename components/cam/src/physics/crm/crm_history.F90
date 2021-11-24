@@ -213,7 +213,7 @@ subroutine crm_history_init(species_class)
    call addfld('LENGC    ', (/'ilev'/),'A','m  ', 'Mixing length scale for the calcuation of vertical difusivity')
    call addfld('SPBUOYA ', (/'lev'/), 'A','K/s', 'resolved buoyancy flux')
    call addfld('SPWW    ', (/'lev'/), 'A','m2/s2', 'ww^2') 
-   call addfld('QCSEDI   ', (/'lev'/), 'A','kg/kg/s', 'cloud ice increment') 
+   call addfld('SPQIFALL   ', (/'lev'/), 'A','kg/kg/s', 'the horizontally-averaged ice_fall') 
    call addfld('SPKVH     ',(/'ilev'/),'A','m2/s    ','Vertical diffusivity used in dropmixnuc in the MMF call')
    call addfld('SPWTKE   ', (/'lev'/), 'A','m/s',     'Standard deviation of updraft velocity')
    call addfld('SPLCLOUD  ',(/'lev'/), 'A','        ','Liquid cloud fraction')
@@ -465,7 +465,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    call outfld('SPDQC   ',ptend%q(1,1,ixcldliq), pcols, lchnk )
    call outfld('SPDQI   ',ptend%q(1,1,ixcldice), pcols, lchnk )
    call outfld('SPWW    ',crm_output%spww      , pcols, lchnk )
-   call outfld('QCSEDI  ',crm_output%qc_fall   , pcols, lchnk )
+   call outfld('SPQIFALL  ',crm_output%qifall   , pcols, lchnk )
    call outfld('SPBUOYA ',crm_output%spbuoya   , pcols, lchnk )
    ! CRM radiative heating rate
    ! NOTE: We output the radiative heating rates (SPQRS and SPQRL) here 

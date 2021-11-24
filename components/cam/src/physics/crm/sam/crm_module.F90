@@ -760,7 +760,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       !---------------------------------------------------------
       !   Ice fall-out
       if(docloud) then
-        call ice_fall(ncrms,qc_fall_tot)
+        call ice_fall(ncrms,crm_output)
       endif
 
       !----------------------------------------------------------
@@ -887,7 +887,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
         enddo
         crm_ww_inst(icrm,k) = crm_ww_inst(icrm,k)*factor_xy ! Mean w at each
         crm_ww(icrm,k) = crm_ww(icrm,k) + crm_ww_inst(icrm,k)
-        crm_output%qc_fall(icrm,k) = crm_output%qc_fall(icrm,k) + qc_fall_tot(icrm,k)
       enddo
     enddo
 

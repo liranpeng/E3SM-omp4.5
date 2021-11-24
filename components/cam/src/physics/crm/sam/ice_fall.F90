@@ -3,9 +3,10 @@ module ice_fall_mod
 
 contains
 
-  subroutine ice_fall(ncrms)
+  subroutine ice_fall(ncrms,crm_output)
     ! Sedimentation of ice:
     use vars
+    use crm_output_module,      only: crm_output_type
     use microphysics, only: micro_field, index_cloud_ice, &
     doclouddropsedimentation
     !use micro_params
@@ -19,7 +20,8 @@ contains
     integer :: i,j,k, kb, kc, ici,icrm
     real(crm_rknd) coef,dqi,lat_heat,vt_ice
     real(crm_rknd) omnu, omnc, omnd, qiu, qic, qid, tmp_theta, tmp_phi
-
+    type(crm_output_type), target,     intent(inout) :: crm_output
+    
     allocate( kmax(ncrms) )
     allocate( kmin(ncrms) )
     allocate( fz(ncrms,nx,ny,nz) )
@@ -140,6 +142,7 @@ contains
             ! Include this effect in the total moisture budget.
             !$acc atomic update
             qifall(icrm,k) = qifall(icrm,k) + dqi
+            crm_output%qifall(icrm,k) = qifall(icrm,k) 
             precflux(icrm,k) = precflux(icrm,k) - fz(icrm,i,j,k)*dtn/dz(icrm) 
             ! The latent heat flux induced by the falling cloud ice enters
             ! the liquid-ice static energy budget in the same way as the
