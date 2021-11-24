@@ -61,15 +61,15 @@ coef_cl = 1.19e8*(3./(4.*3.1415*rho_water*Nc0*1.e6))**(2./3.)
 ! Compute cloud ice flux (using flux limited advection scheme, as in
 ! chapter 6 of Finite Volume Methods for Hyperbolic Problems by R.J.
 ! LeVeque, Cambridge University Press, 2002). 
-do icrm = 1 , ncrms
-  do k = max(1,kmin(icrm)-1),kmax(icrm)
-   ! Set up indices for x-y planes above and below current plane.
+do k = max(1,min(kmin)-1),max(kmax)
+  ! Set up indices for x-y planes above and below current plane.
    kc = min(nzm,k+1)
    kb = max(1,k-1)
-   ! CFL number based on grid spacing interpolated to interface i,j,k-1/2
-   coef = dtn/(0.5*(adz(icrm,kb)+adz(icrm,k))*dz(icrm))
    do j = 1,ny
-      do i = 1,nx
+    do i = 1,nx
+      do icrm = 1 , ncrms  
+         ! CFL number based on grid spacing interpolated to interface i,j,k-1/2
+         coef = dtn/(0.5*(adz(icrm,kb)+adz(icrm,k))*dz(icrm))
          ! Compute cloud liquid density in this cell and the ones above/below.
          ! Since cloud liquid is falling, the above cell is u (upwind),
          ! this cell is c (center) and the one below is d (downwind). 
@@ -106,11 +106,11 @@ fz(:,:,:,nz) = 0.
 ! This only works for schemes that advect water vapor and cloud liquid mass
 !   together as a single species.
 iqcl = index_water_vapor
-do icrm = 1 , ncrms
-  do k=max(1,kmin(icrm)-2),kmax(icrm)
-   coef=dtn/(dz(icrm)*adz(icrm,k)*rho(icrm,k))
-   do j=1,ny
-      do i=1,nx
+do k=max(1,min(kmin)-2),max(kmax)
+  do j=1,ny
+    do i=1,nx
+      do icrm = 1 , ncrms 
+         coef=dtn/(dz(icrm)*adz(icrm,k)*rho(icrm,k)) 
          ! The cloud liquid increment is the difference of the fluxes.
          dqcl=coef*(fz(icrm,i,j,k)-fz(icrm,i,j,k+1))
          ! Add this increment to both non-precipitating and total water.
@@ -133,12 +133,12 @@ do icrm = 1 , ncrms
 end do
 
 if(do_chunked_energy_budgets) then
-  do icrm = 1 , ncrms
-  !bloss: save sedimentation tendencies for energy budgets in mse.f90
-   do k=max(1,kmin(icrm)-2),kmax(icrm)
-    coef=dtn/(dz(icrm)*adz(icrm,k)*rho(icrm,k))
+  do k=max(1,min(kmin)-2),max(kmax)
     do j=1,ny
       do i=1,nx
+        do icrm = 1 , ncrms
+        !bloss: save sedimentation tendencies for energy budgets in mse.f90
+         coef=dtn/(dz(icrm)*adz(icrm,k)*rho(icrm,k))
         ! The cloud liquid increment is the difference of the fluxes.
          dqcl=coef*(fz(icrm,i,j,k)-fz(icrm,i,j,k+1))
          qtot_sed(icrm,i,j,k) = qtot_sed(icrm,i,j,k) + dqcl
