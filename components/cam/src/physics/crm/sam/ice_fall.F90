@@ -21,7 +21,7 @@ contains
     real(crm_rknd) coef,dqi,lat_heat,vt_ice
     real(crm_rknd) omnu, omnc, omnd, qiu, qic, qid, tmp_theta, tmp_phi
     type(crm_output_type), target,     intent(inout) :: crm_output
-    
+
     allocate( kmax(ncrms) )
     allocate( kmin(ncrms) )
     allocate( fz(ncrms,nx,ny,nz) )
@@ -158,8 +158,6 @@ contains
         end do
       end do
     end do
-
-	endif
 
     !$acc parallel loop collapse(3) async(asyncid)
     do j=1,ny

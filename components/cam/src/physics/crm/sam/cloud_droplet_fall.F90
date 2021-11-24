@@ -14,7 +14,7 @@ use params
 implicit none
 integer, intent(in) :: ncrms
 integer :: icrm
-integer i,j,k, kb, kc, iqcl
+integer i,j,k, kb, kc, iqcl,minkmin,maxkmax
 integer, dimension(ncrms) :: return_flag
 real coef,dqcl,lat_heat,vt_liq, coef_cl
 real omnu, omnc, omnd, qclu, qclc, qcld, tmp_theta, tmp_phi
@@ -43,6 +43,17 @@ do k = 1,nzm
  end do
 end do
 
+minkmin = 9999
+maxkmax = -9999
+do icrm = 1 , ncrms
+  if(kmin(icrm).lt.minkmin) then
+    minkmin = kmin
+  end if  
+  if(kmax(icrm).gt.maxkmax) then
+    maxkmax = kmax
+  end if 
+end do
+
 return_flag(:) = 0
 ! Do not compute sedimentation if no cloud liquid is present
 do icrm = 1 , ncrms
@@ -61,7 +72,7 @@ coef_cl = 1.19e8*(3./(4.*3.1415*rho_water*Nc0*1.e6))**(2./3.)
 ! Compute cloud ice flux (using flux limited advection scheme, as in
 ! chapter 6 of Finite Volume Methods for Hyperbolic Problems by R.J.
 ! LeVeque, Cambridge University Press, 2002). 
-do k = max(1,min(kmin)-1),max(kmax)
+do k = max(1,minkmin-1),maxkmax
   ! Set up indices for x-y planes above and below current plane.
    kc = min(nzm,k+1)
    kb = max(1,k-1)
@@ -106,7 +117,7 @@ fz(:,:,:,nz) = 0.
 ! This only works for schemes that advect water vapor and cloud liquid mass
 !   together as a single species.
 iqcl = index_water_vapor
-do k=max(1,min(kmin)-2),max(kmax)
+do k=max(1,minkmin-2),maxkmax
   do j=1,ny
     do i=1,nx
       do icrm = 1 , ncrms 
@@ -133,7 +144,7 @@ do k=max(1,min(kmin)-2),max(kmax)
 end do
 
 if(do_chunked_energy_budgets) then
-  do k=max(1,min(kmin)-2),max(kmax)
+  do k=max(1,minkmin-2),maxkmax
     do j=1,ny
       do i=1,nx
         do icrm = 1 , ncrms
