@@ -9,6 +9,7 @@ module micro_params
   real :: Nc0_oceanice = 70. ! cloud droplet number concentration in #/cm3 <Ocean>
   real :: Nc0_land = 200. ! cloud droplet number concentration in #/cm3 <Land>
   logical :: doclouddropsedimentation = .true. ! turn on cloud droplet sedimenation (default = true)
+  real :: sigmag_fixed = 1.5 ! fixed value of geometric standard deviation of cloud droplet size distribution
 
   logical :: douse_reffc = .false. ! compute cloud droplet effective radii from drop size distribution when using full radiation
 

@@ -6,7 +6,7 @@ subroutine cloud_droplet_fall(ncrms)
 
 use vars
 use microphysics, only: micro_field, index_water_vapor, &
-     Nc0, sigmag,  rho_water, &
+     Nc0, sigmag_fixed,  rho_water, &
      qtot_sed, prec_accum,do_chunked_energy_budgets
 !use micro_params
 use params
@@ -19,48 +19,21 @@ integer, dimension(ncrms) :: return_flag
 real coef,dqcl,lat_heat,vt_liq, coef_cl
 real omnu, omnc, omnd, qclu, qclc, qcld, tmp_theta, tmp_phi
 real fz(ncrms,nx,ny,nz)
-integer, allocatable :: kmax(:)
-integer, allocatable :: kmin(:)
+integer :: kmax
+integer :: kmin
 
-allocate( kmax(ncrms) )
-allocate( kmin(ncrms) )
-
-
-kmax(:)=0
-kmin(:)=nzm+1
+kmax=0
+kmin=nzm+1
 
 do k = 1,nzm
- do j = 1, ny
-  do i = 1, nx
-    do icrm = 1 , ncrms
-      if(qcl(icrm,i,j,k).gt.0.) then
-        ! find range of vertical levels with cloud liquid
-        kmin(icrm) = min(kmin(icrm),k)
-        kmax(icrm) = max(kmax(icrm),k)
-      end if
-    end do
-  end do
- end do
-end do
-
-minkmin = 9999
-maxkmax = -9999
-do icrm = 1 , ncrms
-  if(kmin(icrm).lt.minkmin) then
-    minkmin = kmin(icrm)
-  end if  
-  if(kmax(icrm).gt.maxkmax) then
-    maxkmax = kmax(icrm)
-  end if 
-end do
-
-return_flag(:) = 0
-! Do not compute sedimentation if no cloud liquid is present
-do icrm = 1 , ncrms
-  if(kmax(icrm).lt.kmin(icrm)) then
-    return_flag(icrm) = 1
+  ! test all CRMs at same time
+  if(MAXVAL(qcl(:,:,:,k)).gt.0.) then
+    kmin = MIN(kmin,k)
+    kmax = MAX(kmax,k)
   end if
 end do
+
+if(kmin.gt.kmax) return ! leave routine if no cloud liquid
 
 fz(:,:,:,:) = 0.
 !
@@ -72,7 +45,7 @@ coef_cl = 1.19e8*(3./(4.*3.1415*rho_water*Nc0*1.e6))**(2./3.)
 ! Compute cloud ice flux (using flux limited advection scheme, as in
 ! chapter 6 of Finite Volume Methods for Hyperbolic Problems by R.J.
 ! LeVeque, Cambridge University Press, 2002). 
-do k = max(1,minkmin-1),maxkmax
+do k = max(1,kmin-1),kmax
   ! Set up indices for x-y planes above and below current plane.
    kc = min(nzm,k+1)
    kb = max(1,k-1)
@@ -93,7 +66,7 @@ do k = max(1,minkmin-1),maxkmax
          !   is computed above.  Depends on (rho*qcl)^(2/3).  Small offset of 1.e-12
          !   prevents issues with raising zero to a fractional power.
          vt_liq = coef_cl*(qclc+1.e-12)**(2./3.) &
-              *exp(5.*log( sigmag(qclc) )**2)
+              *exp(5.*log( sigmag_fixed )**2)
 
          ! Use MC flux limiter in computation of flux correction.
          ! (MC = monotonized centered difference).
@@ -117,7 +90,7 @@ fz(:,:,:,nz) = 0.
 ! This only works for schemes that advect water vapor and cloud liquid mass
 !   together as a single species.
 iqcl = index_water_vapor
-do k=max(1,minkmin-2),maxkmax
+do k=max(1,kmin-2),kmax
   do j=1,ny
     do i=1,nx
       do icrm = 1 , ncrms 
@@ -143,28 +116,6 @@ do k=max(1,minkmin-2),maxkmax
   end do
 end do
 
-if(do_chunked_energy_budgets) then
-  do k=max(1,minkmin-2),maxkmax
-    do j=1,ny
-      do i=1,nx
-        do icrm = 1 , ncrms
-        !bloss: save sedimentation tendencies for energy budgets in mse.f90
-         coef=dtn/(dz(icrm)*adz(icrm,k)*rho(icrm,k))
-        ! The cloud liquid increment is the difference of the fluxes.
-         dqcl=coef*(fz(icrm,i,j,k)-fz(icrm,i,j,k+1))
-         qtot_sed(icrm,i,j,k) = qtot_sed(icrm,i,j,k) + dqcl
-       end do
-     end do
-   end do
-  end do
-!bloss(TODO): Include cloud drop sedimentation contribution to surface precipitation in 
-!    MSE Budget outputs.  This cloud be important for fog...
-!!$   prec_accum(1:nx,1:ny) = prec_accum(1:nx,1:ny) &
-!!$        - dtn*fz(1:nx,1:ny,1)
- end if
-
-deallocate( kmax )
-deallocate( kmin )
 
 end subroutine cloud_droplet_fall
 
