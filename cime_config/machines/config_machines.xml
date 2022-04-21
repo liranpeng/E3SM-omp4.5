@@ -441,6 +441,66 @@
     </environment_variables>
   </machine>
 
+  <!-- PSC bridges2 at TACC -->
+  <machine MACH="bridges2">
+    <DESC>Bridges2 RM nodes at TACC.  Each RM node has 128 cores, batch system is SLURM</DESC>
+    <NODENAME_REGEX>.*bridges2.*</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intelb</COMPILERS>
+    <MPILIBS>intelmpi</MPILIBS>
+    <SAVE_TIMING_DIR>/ocean/projects/atm200007p/walrus</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>acme</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/ocean/projects/atm200007p/walrus/bridge2</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/ocean/projects/atm200007p/walrus/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/ocean/projects/atm200007p/walrus/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/ocean/projects/atm200007p/walrus/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/ocean/projects/atm200007p/walrus/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks">-np {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/jet/packages/spack/opt/spack/linux-centos8-zen2/gcc-10.2.0/python-2.7.18-3l6nuvdclfbwr6vl6j4k5yucwr43ipvb/lib/pkgconfig</init_path>
+      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module -q</cmd_path>
+      <cmd_path lang="csh">module -q</cmd_path>
+
+      <modules>
+        <command name="purge"/>
+        <command name="load">python/2.7.18</command>
+        <command name="load">intel/20.4</command>
+        <command name="load">intelmpi/20.4-intel20.4</command>
+        <command name="load">mkl/2020.4.304</command>
+        <command name="load">hdf5/1.12.0-intel20.4</command>
+    </modules>
+
+    </module_system>
+
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <environment_variables>
+      <env name="NETCDFROOT">/ocean/projects/atm200007p/shared/netcdf</env>
+      <env name="LD_LIBRARY_PATH">/ocean/projects/atm200007p/shared/netcdf/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="HDF5_PATH">/opt/packages/hdf5/hdf5-1.12.0/INTEL</env>
+      <env name="MKLROOT">/opt/intel/compilers_and_libraries_2020.4.304/linux/mkl/lib/intel64_lin</env>
+    </environment_variables>
+  </machine>
+
   <!-- Skylake nodes of Stampede2 at TACC -->
   <machine MACH="frontera">
     <DESC>Frontera hosts 8,008 Cascade Lake (CLX) compute nodes contained in 91 racks, batch system is SLURM</DESC>

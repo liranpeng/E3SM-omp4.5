@@ -360,6 +360,18 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="bridges2" type="slurm">
+    <directives>
+      <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+      <directive>-n {{ total_tasks }}</directive>
+      <directive> --nodes={{ num_nodes }}</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="48:00:00" nodemax="128" >RM</queue>
+      <queue walltimemax="02:00:00" nodemax="40" default="true">RM-small</queue>
+    </queues>
+  </batch_system>
+
     <batch_system MACH="mira" type="cobalt">
       <queues>
         <queue walltimemax="03:00:00" default="true">default</queue>

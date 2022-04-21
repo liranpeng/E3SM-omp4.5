@@ -1505,6 +1505,35 @@ flags should be captured within MPAS CMake files.
   </SLIBS>
 </compiler>
 
+<compiler MACH="bridges2" COMPILER="intelb">
+  <CFLAGS>
+    <base> -O2 </base>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DLINUX </append>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</append>
+  </CPPDEFS>
+  <FFLAGS>
+    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml -mkl </base>
+    <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
+  </FFLAGS>
+  <MPICC> mpiicc </MPICC>
+  <MPICXX> mpiicpc  </MPICXX>
+  <MPIFC> mpiifort </MPIFC>
+  <NETCDF_PATH> /ocean/projects/atm200007p/shared/netcdf</NETCDF_PATH>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <SFC> ifort </SFC>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <SLIBS>
+    <append> -L$NETCDF_PATH/lib -lnetcdf -L$NETCDF_PATH/lib -lnetcdff -mkl </append>
+  </SLIBS>
+</compiler>
+
 <compiler MACH="frontera" COMPILER="intel">
   <CFLAGS>
     <append> -xCORE-AVX2 </append>
