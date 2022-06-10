@@ -290,6 +290,7 @@ contains
 ! 
 !-----------------------------------------------------------------------
     use physconst,          only: tmelt
+    use micro_params,       only: sigmag_fixed, doclouddropsedimentation
 !------------------------------Arguments--------------------------------
 !
 ! Input arguments
@@ -318,6 +319,10 @@ contains
     rliqocean = 14.0_r8
     rliqice   = 14.0_r8
     rliqland  = 8.0_r8
+
+    if(doclouddropsedimentation) then
+        rliqocean = rliqocean * exp( log(sigmag_fixed)**2 ) / exp( log(1.34)**2 )
+    end if
     do k=1,pver
        do i=1,ncol
 ! jrm Reworked effective radius algorithm
