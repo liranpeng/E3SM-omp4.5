@@ -1095,7 +1095,7 @@ contains
 
       use pkg_cldoptics, only: cldefr  ! for sam1mom microphysics
 
-      use physconst,    only: gravit, cpair
+      use physconst,    only: gravit, cpair,rair,zvir
       use phys_control, only: phys_getopts
 
       use radiation_state, only: set_rad_state
@@ -1103,7 +1103,7 @@ contains
       use cam_optics, only: set_aerosol_optics_lw, set_aerosol_optics_sw, & 
                             get_cloud_optics_sw, sample_cloud_optics_sw, &
                             get_cloud_optics_lw, sample_cloud_optics_lw
-
+      use micro_params, only: sigmag_fixed,doclouddropsedimentation,Nc0_land,Nc0_oceanice
 #ifdef MODAL_AERO
       use modal_aero_data, only: ntot_amode
 #endif
@@ -1277,6 +1277,7 @@ contains
       ! Loop variables
       integer :: icol, ilay
 
+      real(r8) :: nliq,rho_air
       !----------------------------------------------------------------------
 
       ! Copy state so we can use CAM routines with arrays replaced with data
@@ -1478,6 +1479,15 @@ contains
                                  iciwp(ic,ilev) = crm_qi(ic,ix,iy,iz)          &
                                                 * state%pdel(ic,ilev) / gravit &
                                                 / max(0.01_r8, cld(ic,ilev))
+                                 if ( (trim(MMF_microphysics_scheme) .eq.'sam1mom') .and. doclouddropsedimentation .and. (crm_qc(ic,ix,iy,iz).gt.0.) ) then
+                                    nliq = 1.e6 * ( Nc0_oceanice + landfrac(ic)*(Nc0_land - Nc0_oceanice) ) ! convert to #/m3
+                                    rho_air = state%pmid(ic,ilev) / ( rair * crm_t (ic,ix,iy,iz) * (1. + zvir * crm_qv (ic,ix,iy,iz) ) )  ! kg/m3
+                                    rel(ic,ilev) = ( (3. * rho_air * crm_qc(ic,ix,iy,iz) ) & ! kg air/m3 * kg liquid/kg air
+                                                   / ( 4.* 3.14159 * 1000. * nliq ) & ! kg liquid/m3 * #liquid/m3 
+                                                   ) **(1./3.) * exp( log( sigmag_fixed ) **2 )
+                                    rel(ic,ilev) = 1.e6 * rel(ic,ilev) ! convert from m to microns to be consistent with reltab().
+                                    print*,ic,ilev,rel(ic,ilev)
+                                 end if
                               else
                                  iclwp(ic,ilev) = 0
                                  iciwp(ic,ilev) = 0
