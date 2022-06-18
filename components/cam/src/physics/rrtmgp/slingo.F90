@@ -59,17 +59,17 @@ contains
       ! Parameterization for the Shortwave Properties of Water Clouds' JAS
       ! vol. 46 may 1989 pp 1419-1427)
       real(r8) :: abarl(4) = &  ! A coefficient for extinction optical depth
-         (/ 2.817e-02_r8, 2.682e-02_r8,2.264e-02_r8,1.281e-02_r8/)
+         (/ -8.737e00_r8, -1.451e01_r8,-2.576e01_r8,-3.414e01_r8/)
       real(r8) :: bbarl(4) = &  ! B coefficient for extinction optical depth
-         (/ 1.305_r8    , 1.346_r8    ,1.454_r8    ,1.641_r8    /)
+         (/ 1.671e-03_r8    , 1.772e-03_r8    ,1.959e-03_r8    ,2.147e-03_r8    /)
       real(r8) :: cbarl(4) = &  ! C coefficient for single scat albedo
-         (/-5.62e-08_r8 ,-6.94e-06_r8 ,4.64e-04_r8 ,0.201_r8    /)
+         (/ 1.008e-07_r8 ,9.981e-06_r8 ,1.177e-03_r8 ,1.690e-01_r8    /)
       real(r8) :: dbarl(4) = &  ! D coefficient for single  scat albedo
-         (/ 1.63e-07_r8 , 2.35e-05_r8 ,1.24e-03_r8 ,7.56e-03_r8 /)
+         (/ 1.536e-01_r8 , 1.581e01_r8 ,1.247e03_r8 ,6.919e03_r8 /)
       real(r8) :: ebarl(4) = &  ! E coefficient for asymmetry parameter
-         (/ 0.829_r8    , 0.794_r8    ,0.754_r8    ,0.826_r8    /)
+         (/ 8.371e-01_r8    , 8.147e-01_r8    ,7.914e-01_r8    ,8.354e-01_r8    /)
       real(r8) :: fbarl(4) = &  ! F coefficient for asymmetry parameter
-         (/ 2.482e-03_r8, 4.226e-03_r8,6.560e-03_r8,4.353e-03_r8/)
+         (/ 1.729e03_r8, 2.642e03_r8,3.701e03_r8,3.503e03_r8/)
 
       real(r8) :: abarli        ! A coefficient for current spectral band
       real(r8) :: bbarli        ! B coefficient for current spectral band
@@ -81,8 +81,8 @@ contains
       ! Caution... A. Slingo recommends no less than 4.0 micro-meters nor
       ! greater than 20 micro-meters. Here we set effective radius limits
       ! for liquid to the range 4.2 < rel < 16 micron (Slingo 89)
-      real(r8), parameter :: rel_min = 4.2_r8
-      real(r8), parameter :: rel_max = 16._r8
+      real(r8), parameter :: rel_min = 2.0_r8
+      real(r8), parameter :: rel_max = 24._r8
 
       integer :: ns, i, k, indxsl
       real(r8) :: tmp1l, tmp2l, tmp3l, g
