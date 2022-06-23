@@ -440,7 +440,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   enddo
 #endif /* m2005 */
 
-  call micro_init(ncrms)
+  call micro_init(ncrms,crm_input%landfrac)
 
   ! initialize sgs fields
   call sgs_init(ncrms)

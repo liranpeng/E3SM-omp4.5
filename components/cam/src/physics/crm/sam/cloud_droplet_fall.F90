@@ -6,7 +6,7 @@ subroutine cloud_droplet_fall(ncrms)
 
 use vars
 use microphysics, only: micro_field, index_water_vapor, &
-     Nc0, sigmag_fixed,  rho_water, &
+     Nc0, sigmag_fixed,  rho_water, Nc0_local,&
      qtot_sed, prec_accum,do_chunked_energy_budgets
 !use micro_params
 use params
@@ -16,7 +16,7 @@ integer, intent(in) :: ncrms
 integer :: icrm
 integer i,j,k, kb, kc, iqcl,minkmin,maxkmax
 integer, dimension(ncrms) :: return_flag
-real coef,dqcl,lat_heat,vt_liq, coef_cl
+real coef,dqcl,lat_heat,vt_liq, coef_cl(icrms)
 real omnu, omnc, omnd, qclu, qclc, qcld, tmp_theta, tmp_phi
 real fz(ncrms,nx,ny,nz)
 integer :: kmax
@@ -40,7 +40,9 @@ fz(:,:,:,:) = 0.
 ! Take into account sedimentation of cloud water which may be important for stratocumulus case.
 ! Parameterization of sedimentation rate is taken from GCSS WG1 DYCOMS2_RF2 case, and base on
 ! Rogers and Yau, 1989
-coef_cl = 1.19e8*(3./(4.*3.1415*rho_water*Nc0*1.e6))**(2./3.)
+do icrm=1,ncrms
+  coef_cl(icrm) = 1.19e8*(3./(4.*3.1415*rho_water*Nc0_local(icrm)*1.e6))**(2./3.)
+end do
 
 ! Compute cloud ice flux (using flux limited advection scheme, as in
 ! chapter 6 of Finite Volume Methods for Hyperbolic Problems by R.J.
@@ -65,7 +67,7 @@ do k = max(1,kmin-1),kmax
          ! From Rogers and Yau.  Leading coefficient (assumed to be uniform in space)
          !   is computed above.  Depends on (rho*qcl)^(2/3).  Small offset of 1.e-12
          !   prevents issues with raising zero to a fractional power.
-         vt_liq = coef_cl*(qclc+1.e-12)**(2./3.) &
+         vt_liq = coef_cl(icrm)*(qclc+1.e-12)**(2./3.) &
               *exp(5.*log( sigmag_fixed )**2)
 
          ! Use MC flux limiter in computation of flux correction.

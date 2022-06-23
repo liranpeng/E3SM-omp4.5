@@ -745,6 +745,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       crm_input%ul(1:ncol,1:pver) = state%u(1:ncol,1:pver)
       crm_input%vl(1:ncol,1:pver) = state%v(1:ncol,1:pver)
       crm_input%ocnfrac(1:ncol) = cam_in%ocnfrac(1:ncol)
+      crm_input%landfrac(1:ncol) = cam_in%landfrac(1:ncol)
 #if defined( MMF_ESMT )
       ! Set the input wind for ESMT
       crm_input%ul_esmt(1:ncol,1:pver) = state%u(1:ncol,1:pver)

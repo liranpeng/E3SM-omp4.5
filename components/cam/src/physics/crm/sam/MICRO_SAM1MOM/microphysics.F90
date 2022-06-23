@@ -94,6 +94,7 @@ CONTAINS
     allocate( qpsrc(ncrms,nz)  )
     allocate( qpevp(ncrms,nz)  )
     allocate( flag_precip    (nmicro_fields) )
+    allocate( Nc0_local(ncrms)) !bloss/autoc
 
     call prefetch(micro_field  )
     call prefetch(fluxbmk   )
@@ -107,6 +108,7 @@ CONTAINS
     call prefetch(qpsrc  )
     call prefetch(qpevp  )
     call prefetch(flag_precip    )
+    call prefetch(Nc0_local      )
 
     do_chunked_energy_budgets = .true.
     zero = 0
@@ -126,6 +128,7 @@ CONTAINS
     qpsrc = zero
     qpevp = zero
     flag_precip    (:)  = (/0,1/)
+    Nc0_local(:) = Nc0 ! bloss/autoc
   end subroutine allocate_micro
 
 
@@ -165,17 +168,25 @@ CONTAINS
   !!! Initialize microphysics:
 
 
-  subroutine micro_init(ncrms)
+  subroutine micro_init(ncrms,landfrac) !bloss/autoc
 
     use grid, only: nrestart
     use vars
     implicit none
     integer, intent(in) :: ncrms
+    real(crm_rknd), dimension(ncrms), intent(in) :: landfrac !bloss/autoc
+    real(crm_rknd) :: Nc0_local
     integer k, n,icrm, i, j, l
 
     a_bg = 1./(tbgmax-tbgmin)
     a_pr = 1./(tprmax-tprmin)
     a_gr = 1./(tgrmax-tgrmin)
+
+    if(doNc0autoconversion.OR.doclouddropsedimentation) then !bloss/autoc/sedim
+      do icrm = 1,ncrms
+        Nc0_local(icrm) = Nc0_oceanice + landfrac(icrm)*(Nc0_land - Nc0_oceanice)
+      end do
+    end if !bloss/autoc/sedim
 
     if(nrestart.eq.0) then
 

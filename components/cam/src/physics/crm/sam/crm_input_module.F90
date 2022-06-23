@@ -23,6 +23,7 @@ module crm_input_module
       real(crm_rknd), allocatable :: ul(:,:)             ! Global grid u (m/s)
       real(crm_rknd), allocatable :: vl(:,:)             ! Global grid v (m/s)
       real(crm_rknd), allocatable :: ocnfrac(:)          ! area fraction of the ocean
+      real(crm_rknd), allocatable :: landfrac(:)         ! area fraction of the land
       real(crm_rknd), allocatable :: tau00  (:)          ! large-scale surface stress (N/m2)
       real(crm_rknd), allocatable :: wndls  (:)          ! large-scale surface wind (m/s)
       real(crm_rknd), allocatable :: bflxls (:)          ! large-scale surface buoyancy flux (K m/s)
@@ -69,6 +70,7 @@ contains
       if (.not. allocated(this%ul))       allocate(this%ul(ncrms,nlev))
       if (.not. allocated(this%vl))       allocate(this%vl(ncrms,nlev))
       if (.not. allocated(this%ocnfrac))  allocate(this%ocnfrac(ncrms))
+      if (.not. allocated(this%landfrac))  allocate(this%landfrac(ncrms))
       if (.not. allocated(this%tau00))    allocate(this%tau00(ncrms))
       if (.not. allocated(this%wndls))    allocate(this%wndls(ncrms))
       if (.not. allocated(this%bflxls))   allocate(this%bflxls(ncrms))
@@ -91,6 +93,7 @@ contains
       call prefetch(this%ul)
       call prefetch(this%vl)
       call prefetch(this%ocnfrac)
+      call prefetch(this%landfrac)
       call prefetch(this%tau00)
       call prefetch(this%wndls)
       call prefetch(this%bflxls)
@@ -128,6 +131,7 @@ contains
       this%ul = 0
       this%vl = 0
       this%ocnfrac = 0
+      this%landfrac = 0
       this%tau00   = 0
       this%wndls   = 0
       this%bflxls  = 0
@@ -163,8 +167,8 @@ contains
       deallocate(this%phis)
       deallocate(this%ul)
       deallocate(this%vl)
-
       deallocate(this%ocnfrac)
+      deallocate(this%landfrac)
       deallocate(this%tau00)
       deallocate(this%wndls)
       deallocate(this%bflxls)

@@ -13,6 +13,9 @@ module micro_params
 
   logical :: douse_reffc = .false. ! compute cloud droplet effective radii from drop size distribution when using full radiation
 
+  logical :: doNc0autoconversion = .false. ! modify autoconversion away from land to account for effect of drop number
+  real(crm_rknd), dimension(:), allocatable :: Nc0_local !bloss/autoc local cloud droplet number concentration
+
   !  Microphysics stuff:
 
   ! Densities of hydrometeors

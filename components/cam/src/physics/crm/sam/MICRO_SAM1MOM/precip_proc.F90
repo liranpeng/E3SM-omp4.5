@@ -24,6 +24,7 @@ contains
     real(crm_rknd) dq, omn, omp, omg, qsatt
     real(crm_rknd) pows1, pows2, powg1, powg2, powr1, powr2, tmp
     real(crm_rknd) qii, qcc, qrr, qss, qgg
+    real(crm_rknd), dimension(ncrms) :: qcw0_local, alphaelq_local
 
     powr1 = (3 + b_rain) / 4.
     powr2 = (5 + b_rain) / 8.
@@ -31,6 +32,21 @@ contains
     pows2 = (5 + b_snow) / 8.
     powg1 = (3 + b_grau) / 4.
     powg2 = (5 + b_grau) / 8.
+
+    if(doNc0autoconverion) then !bloss/autoc
+      ! Cloud droplet number concentration is assumed to be
+      !   spatially uniform and steady in each subgrid CRM
+      !   but differs between land and ocean/sea ice.
+      ! Modify Kessler-style autoconversion to account 
+      !   (roughly) for the change in Nc0.  Assume the threshold
+      !   is based on a fixed droplet size, so that qcw0 ~ Nc0.
+      !   Following eqn 2 in Khairoutdinov & Kogan (2000, MWR),
+      !   assume alphaelq ~ Nc0^(-1/3).
+      do icrm = 1 , ncrms
+        qcw0_local(icrm) = qcw0*(Nc0_land/Nc0_local(icrm))
+        alphaelq_local(icrm) = alphaelq*(Nc0_land/Nc0_local(icrm))**(0.333)
+      end do
+    end if
 
     !$acc parallel loop collapse(2) async(asyncid)
     do k=1,nzm
@@ -60,8 +76,8 @@ contains
                 qcc = qn(icrm,i,j,k) * omn
                 qii = qn(icrm,i,j,k) * (1.-omn)
 
-                if(qcc .gt. qcw0) then
-                  autor = alphaelq
+                if(qcc .gt. qcw0_local(icrm)) then
+                  autor = alphaelq_local(icrm)
                 else
                   autor = 0.
                 endif
@@ -93,9 +109,9 @@ contains
                   accrcg = accrgc(icrm,k) * tmp
                   accrig = accrgi(icrm,k) * tmp
                 endif
-                qcc = (qcc+dtn*autor*qcw0)/(1.+dtn*(accrr+accrcs+accrcg+autor))
+                qcc = (qcc+dtn*autor*qcw0_local(icrm))/(1.+dtn*(accrr+accrcs+accrcg+autor))
                 qii = (qii+dtn*autos*qci0)/(1.+dtn*(accris+accrig+autos))
-                dq = dtn *(accrr*qcc + autor*(qcc-qcw0)+(accris+accrig)*qii + (accrcs+accrcg)*qcc + autos*(qii-qci0))
+                dq = dtn *(accrr*qcc + autor*(qcc-qcw0_local(icrm))+(accris+accrig)*qii + (accrcs+accrcg)*qcc + autos*(qii-qci0))
                 dq = min(dq,qn(icrm,i,j,k))
                 qp(icrm,i,j,k) = qp(icrm,i,j,k) + dq
                 q(icrm,i,j,k) = q(icrm,i,j,k) - dq
