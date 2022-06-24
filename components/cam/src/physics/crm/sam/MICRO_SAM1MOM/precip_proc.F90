@@ -33,7 +33,7 @@ contains
     powg1 = (3 + b_grau) / 4.
     powg2 = (5 + b_grau) / 8.
 
-    if(doNc0autoconverion) then !bloss/autoc
+    if(doNc0autoconversion) then !bloss/autoc
       ! Cloud droplet number concentration is assumed to be
       !   spatially uniform and steady in each subgrid CRM
       !   but differs between land and ocean/sea ice.

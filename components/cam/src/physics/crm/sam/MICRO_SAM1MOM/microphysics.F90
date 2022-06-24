@@ -153,6 +153,7 @@ CONTAINS
     deallocate(prec_accum)
     deallocate(prec_ice_accum)
     deallocate(flag_precip    )
+    deallocate(Nc0_local)
   end subroutine deallocate_micro
 
 
@@ -175,7 +176,7 @@ CONTAINS
     implicit none
     integer, intent(in) :: ncrms
     real(crm_rknd), dimension(ncrms), intent(in) :: landfrac !bloss/autoc
-    real(crm_rknd) :: Nc0_local
+    real(crm_rknd), dimension(ncrms) :: Nc0_local
     integer k, n,icrm, i, j, l
 
     a_bg = 1./(tbgmax-tbgmin)

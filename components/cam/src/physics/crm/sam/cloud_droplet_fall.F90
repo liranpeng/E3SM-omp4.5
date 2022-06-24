@@ -16,7 +16,8 @@ integer, intent(in) :: ncrms
 integer :: icrm
 integer i,j,k, kb, kc, iqcl,minkmin,maxkmax
 integer, dimension(ncrms) :: return_flag
-real coef,dqcl,lat_heat,vt_liq, coef_cl(icrms)
+real, dimension(ncrms) :: coef_cl
+real coef,dqcl,lat_heat,vt_liq
 real omnu, omnc, omnd, qclu, qclc, qcld, tmp_theta, tmp_phi
 real fz(ncrms,nx,ny,nz)
 integer :: kmax
