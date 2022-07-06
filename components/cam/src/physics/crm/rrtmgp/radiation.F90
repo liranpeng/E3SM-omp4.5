@@ -1273,7 +1273,8 @@ contains
       ! NOTE: these are diagnostic only
       real(r8), dimension(pcols,pver,nswbands) :: liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw
       real(r8), dimension(pcols,pver,nlwbands) :: liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw
-
+      real(r8), dimension(pcols,pver) :: crm_qv_mean,crm_qc_mean
+      real(r8), dimension(pcols,pver) :: crm_t_mean
       ! Loop variables
       integer :: icol, ilay
 
@@ -1451,6 +1452,24 @@ contains
                aer_optics_sw%ssa = 0
                aer_optics_sw%g   = 0
 
+
+               do ic = 1,ncol
+                 do iz = 1,crm_nz
+                   ilev = pver - iz + 1
+                     do iy = 1,crm_ny_rad
+                       do ix = 1,crm_nx_rad
+                         crm_t_mean(ic,ilev) = crm_t_mean(ic,ilev) + crm_t(ic,ix,iy,iz)
+                         crm_qc_mean(ic,ilev) = crm_qc_mean(ic,ilev) + crm_qc(ic,ix,iy,iz)
+                         crm_qv_mean(ic,ilev) = crm_qv_mean(ic,ilev) + crm_qv(ic,ix,iy,iz)
+                       end do
+                     end do
+                     crm_t_mean(ic,ilev) = crm_t_mean(ic,ilev)/(crm_nx_rad*crm_ny_rad)
+                     crm_qc_mean(ic,ilev) = crm_qc_mean(ic,ilev)/(crm_nx_rad*crm_ny_rad)
+                     crm_qv_mean(ic,ilev) = crm_qv_mean(ic,ilev)/(crm_nx_rad*crm_ny_rad)
+                  end do
+               end do
+               
+
                ! Loop over CRM columns; call routines designed to work with
                ! pbuf/state over ncol columns for each CRM column index, and pack
                ! into arrays dimensioned ncol_tot = ncol * ncrms
@@ -1479,14 +1498,15 @@ contains
                                  iciwp(ic,ilev) = crm_qi(ic,ix,iy,iz)          &
                                                 * state%pdel(ic,ilev) / gravit &
                                                 / max(0.01_r8, cld(ic,ilev))
-                                 if ( (trim(MMF_microphysics_scheme) .eq.'sam1mom') .and. doclouddropsedimentation .and. (crm_qc(ic,ix,iy,iz).gt.0.) ) then
+                                 if ( (trim(MMF_microphysics_scheme) .eq.'sam1mom') .and. doclouddropsedimentation .and. (crm_qc_mean(ic,ilev).gt.0.) ) then
                                     nliq = 1.e6 * ( Nc0_oceanice + landfrac(ic)*(Nc0_land - Nc0_oceanice) ) ! convert to #/m3
-                                    rho_air = state%pmid(ic,ilev) / ( rair * crm_t (ic,ix,iy,iz) * (1. + zvir * crm_qv (ic,ix,iy,iz) ) )  ! kg/m3
-                                    rel(ic,ilev) = ( (3. * rho_air * crm_qc(ic,ix,iy,iz) ) & ! kg air/m3 * kg liquid/kg air
+                                    rho_air = state%pmid(ic,ilev) / ( rair * crm_t_mean(ic,ilev) * (1. + zvir * crm_qv_mean(ic,ilev) ) )  ! kg/m3
+                                    rel(ic,ilev) = ( (3. * rho_air * crm_qc_mean(ic,ilev) ) & ! kg air/m3 * kg liquid/kg air
                                                    / ( 4.* 3.14159 * 1000. * nliq ) & ! kg liquid/m3 * #liquid/m3 
                                                    ) **(1./3.) * exp( log( sigmag_fixed ) **2 )
                                     rel(ic,ilev) = 1.e6 * rel(ic,ilev) ! convert from m to microns to be consistent with reltab().
-                                    print*,ic,ilev,rel(ic,ilev)
+                                    print *,"Liran crmq",rel(ic,ilev)
+
                                  end if
                               else
                                  iclwp(ic,ilev) = 0
