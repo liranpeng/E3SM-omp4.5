@@ -1,0 +1,27 @@
+cff-version: 1.0.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Peng"
+  given-names: "Liran"
+- family-names: "Pritchard"
+  given-names: "Michael"
+- family-names: "Pritchard"
+  given-names: "Michael"
+- family-names: "Blossey"
+  given-names: "Peter N"
+- family-names: "Blossey"
+  given-names: "Peter"
+- family-names: "Hannah"
+  given-names: "Walter M"
+- family-names: "Hannah"
+  given-names: "Christopher S"
+- family-names: "Bretherton"
+  given-names: "Walter"
+- family-names: "Terai"
+  given-names: "Christopher R"
+- family-names: "Jenney"
+  given-names: "Andrea M"
+title: "E3SM with hyperviscosity and sedimentation"
+version: 1.0.0
+date-released: 2023
+url: "https://github.com/liranpeng/E3SM-omp4.5/tree/Hyperviscosity_Sedimentation"
